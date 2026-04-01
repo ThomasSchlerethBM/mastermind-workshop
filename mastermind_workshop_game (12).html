@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mastermind Workshop</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --surface:rgba(20,20,32,0.93);
+  --surface2:rgba(30,30,48,0.96);
+  --border:rgba(255,255,255,0.10);
+  --border2:rgba(255,255,255,0.18);
+  --accent:#FF6840;
+  --accent2:#7eb8f7;
+  --text:#f0f0f8;
+  --muted:rgba(240,240,248,0.45);
+  --red:#f87171;
+  --green:#4ade80;
+  --radius:12px;
+  --radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100vh;font-family:'Rajdhani',sans-serif;color:var(--text)}
+body{
+  background:#0a0a12 url('https://images.unsplash.com/photo-1534796636912-3b95919f04cb?w=1600&q=80') center/cover no-repeat fixed;
+}
+body::before{content:'';position:fixed;inset:0;background:rgba(8,8,18,0.80);backdrop-filter:blur(1px);z-index:0}
+#app{position:relative;z-index:1;min-height:100vh;max-width:1100px;margin:0 auto;padding:16px}
+.hidden{display:none!important}
+
+/* ── FIREBASE CONFIG NOTICE ── */
+#fb-config-screen{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:24px;animation:fadeUp .5s ease both;padding:20px;
+}
+.fb-box{
+  background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);
+  padding:36px;width:100%;max-width:600px;
+}
+.fb-box h2{font-size:1.4rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.fb-box p{font-size:.82rem;color:var(--muted);font-family:'Space Mono',monospace;line-height:1.7;margin-bottom:16px}
+.fb-field{margin-bottom:12px}
+.fb-field label{display:block;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:'Space Mono',monospace;margin-bottom:5px}
+.fb-field input{width:100%;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:rgba(255,255,255,.05);font-family:'Space Mono',monospace;font-size:.85rem;color:var(--text);outline:none;transition:border-color .2s}
+.fb-field input:focus{border-color:var(--accent)}
+.fb-step{background:rgba(255,255,255,.04);border-left:3px solid var(--accent);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:10px 14px;margin-bottom:8px;font-size:.78rem;color:var(--muted);font-family:'Space Mono',monospace;line-height:1.6}
+.fb-step strong{color:var(--text)}
+
+/* ── SPLASH ── */
+#splash{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;animation:fadeUp .6s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.splash-logo h1{font-size:clamp(2.8rem,6vw,5rem);font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);text-shadow:0 0 60px rgba(255,104,64,.35);line-height:1;text-align:center}
+.splash-logo p{font-family:'Space Mono',monospace;font-size:.8rem;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-top:8px;text-align:center}
+.lang-grid{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.lang-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 20px;min-width:90px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .2s;font-family:'Rajdhani',sans-serif;font-size:.85rem;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.lang-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(255,104,64,.08);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.lang-flag{font-size:2.2rem;line-height:1}
+
+/* ── ROLE SELECT ── */
+#role-select{min-height:calc(100vh - 32px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;animation:fadeUp .4s ease both}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;max-width:480px}
+.role-card{padding:36px 24px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .2s}
+.role-card:hover{border-color:var(--accent);transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.role-icon{font-size:2.4rem;margin-bottom:10px}
+.role-name{font-size:1.2rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.role-desc{font-size:.8rem;color:var(--muted);margin-top:4px;font-family:'Space Mono',monospace}
+.back-btn{font-family:'Rajdhani',sans-serif;font-size:.85rem;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;transition:color .2s;padding:8px 0}
+.back-btn:hover{color:var(--text)}
+
+/* ── PIN ── */
+#admin-pin{min-height:calc(100vh - 32px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;animation:fadeUp .3s ease both}
+.pin-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:40px;text-align:center;width:100%;max-width:360px}
+.pin-box h2{font-size:1.3rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.pin-box p{font-size:.8rem;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:24px}
+.pin-input{width:100%;padding:14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:rgba(255,255,255,.05);font-family:'Space Mono',monospace;font-size:1rem;color:var(--text);text-align:center;letter-spacing:.15em;outline:none;transition:border-color .2s}
+.pin-input:focus{border-color:var(--accent)}
+.pin-error{font-size:.8rem;color:var(--red);font-family:'Space Mono',monospace;margin-top:8px;min-height:20px}
+
+/* ── HEADER ── */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px}
+.hdr-title{font-size:1.2rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.badge{font-size:.7rem;padding:4px 12px;border-radius:20px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.badge.admin{background:rgba(255,104,64,.15);border:1px solid rgba(255,104,64,.3);color:var(--accent)}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:9px 20px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:.9rem;font-weight:600;color:var(--muted);transition:all .15s;letter-spacing:.04em;text-transform:uppercase}
+.tab.active{background:rgba(255,104,64,.12);border-color:rgba(255,104,64,.4);color:var(--accent)}
+.tab:hover:not(.active){color:var(--text)}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:16px}
+.card-title{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px;font-family:'Space Mono',monospace}
+
+/* ── SLOTS ── */
+.slots{display:flex;gap:12px;margin:12px 0 22px;flex-wrap:wrap}
+.slot{width:58px;height:58px;border-radius:50%;border:2px dashed rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;font-size:1.4rem;color:var(--muted)}
+.slot.active-slot{border-style:solid;border-color:var(--accent);box-shadow:0 0 0 4px rgba(255,104,64,.2)}
+.slot.filled{border-style:solid;border-color:rgba(255,255,255,.2)}
+.slot .clr{width:100%;height:100%;border-radius:50%}
+
+/* ── PALETTE ── */
+.palette{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.pchip{width:46px;height:46px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .18s;position:relative}
+.pchip:hover{transform:scale(1.15);border-color:rgba(255,255,255,.7)}
+.plabel{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);font-size:.65rem;color:var(--muted);white-space:nowrap;font-family:'Space Mono',monospace}
+
+/* ── TOGGLE ── */
+.toggle-row{display:flex;align-items:center;gap:12px;margin:12px 0}
+.tog{position:relative;width:46px;height:26px;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0;position:absolute}
+.tog-sl{position:absolute;inset:0;background:rgba(255,255,255,.15);border-radius:26px;cursor:pointer;transition:.2s}
+.tog-sl::before{content:'';position:absolute;width:20px;height:20px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.2s}
+.tog input:checked+.tog-sl{background:var(--accent)}
+.tog input:checked+.tog-sl::before{transform:translateX(20px)}
+.tog-label{font-size:.9rem;color:var(--text);font-weight:500}
+
+/* ── BUTTONS ── */
+button{cursor:pointer;font-family:'Rajdhani',sans-serif}
+.btn{padding:10px 22px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:rgba(255,255,255,.05);font-size:.9rem;font-weight:600;color:var(--text);transition:all .18s;letter-spacing:.04em;text-transform:uppercase}
+.btn:hover{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.3)}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#000}
+.btn.primary:hover{background:#FF8060;box-shadow:0 6px 20px rgba(255,104,64,.35)}
+.btn.danger{background:rgba(248,113,113,.15);border-color:rgba(248,113,113,.4);color:var(--red)}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── INPUTS ── */
+input[type=text],select{padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:rgba(255,255,255,.05);font-family:'Rajdhani',sans-serif;font-size:.95rem;color:var(--text);outline:none;transition:border-color .2s}
+input[type=text]:focus{border-color:var(--accent)}
+select option{background:#1a1a28;color:var(--text)}
+
+/* ── TEAMS ── */
+.team-input-row{display:flex;gap:8px;margin-bottom:14px}
+.team-item{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px}
+.team-name-text{font-size:.95rem;font-weight:600;letter-spacing:.04em}
+.team-link-text{font-size:.68rem;color:var(--accent2);word-break:break-all;margin-top:3px;font-family:'Space Mono',monospace}
+
+/* ── DASHBOARD ── */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.dash-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;border-top:3px solid var(--border)}
+.dash-card.playing{border-top-color:var(--accent2)}.dash-card.won{border-top-color:var(--green)}.dash-card.lost{border-top-color:var(--red)}
+.dash-name{font-size:1rem;font-weight:700;letter-spacing:.04em;margin-bottom:3px}
+.dash-status{font-size:.72rem;color:var(--muted);margin-bottom:10px;font-family:'Space Mono',monospace}
+.dash-status.won{color:var(--green)}.dash-status.lost{color:var(--red)}.dash-status.playing{color:var(--accent2)}
+.mini-row{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+.mini-dot{width:18px;height:18px;border-radius:50%;border:1px solid rgba(255,255,255,.15)}
+.mini-hints{display:flex;gap:3px;margin-left:4px}
+.hint{width:10px;height:10px;border-radius:50%}
+.hint.b{background:#111;border:1px solid #555}.hint.w{background:#ddd;border:1px solid #aaa}.hint.e{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}
+.prog-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.prog-bg{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:2px}
+.prog-fill{height:4px;background:var(--accent2);border-radius:2px;transition:width .4s}
+.prog-label{font-size:.68rem;color:var(--muted);font-family:'Space Mono',monospace;min-width:28px;text-align:right}
+
+/* ── GAME ── */
+.game-layout{display:grid;grid-template-columns:210px 1fr;gap:16px}
+@media(max-width:620px){.game-layout{grid-template-columns:1fr}}
+.history-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;max-height:65vh;overflow-y:auto}
+.hist-row{display:flex;align-items:center;gap:6px;padding:7px 9px;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:5px;border:1px solid var(--border);animation:slideIn .2s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.hist-num{font-size:.68rem;color:var(--muted);font-family:'Space Mono',monospace;width:14px;text-align:center;flex-shrink:0}
+.h-dots{display:flex;gap:3px}
+.h-dot{width:19px;height:19px;border-radius:50%;border:1px solid rgba(255,255,255,.12)}
+.h-hints{display:flex;flex-wrap:wrap;gap:2px;width:32px}
+
+/* ── OVERLAY ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.overlay.show{display:flex}
+.ov-box{background:var(--surface2);border:1px solid var(--border2);border-radius:16px;padding:44px;text-align:center;max-width:380px;width:92%;animation:popIn .4s cubic-bezier(.175,.885,.32,1.275);position:relative}
+@keyframes popIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+.ov-icon{font-size:3.5rem;margin-bottom:14px}
+.ov-title{font-size:2rem;font-weight:700;letter-spacing:.06em;margin-bottom:8px}
+.ov-sub{font-size:.82rem;color:var(--muted);font-family:'Space Mono',monospace;line-height:1.6}
+.ov-code{display:flex;gap:8px;justify-content:center;margin:14px 0}
+.ov-dot{width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,255,255,.2)}
+
+/* ── MSG ── */
+.msg{padding:10px 14px;border-radius:var(--radius-sm);font-size:.85rem;margin-top:10px;font-family:'Space Mono',monospace}
+.msg.ok{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:var(--green)}
+.msg.err{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red)}
+
+/* ── LOADING ── */
+.loading{text-align:center;padding:48px;color:var(--muted);font-size:.9rem;font-family:'Space Mono',monospace}
+.spinner{width:28px;height:28px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lang-menu-item{display:block;width:100%;padding:9px 14px;background:none;border:none;text-align:left;font-family:'Rajdhani',sans-serif;font-size:.88rem;font-weight:600;color:var(--text);cursor:pointer;transition:background .15s;letter-spacing:.03em}
+.lang-menu-item:hover{background:rgba(255,255,255,.08)}
+.lang-menu-item+.lang-menu-item{border-top:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══ FIREBASE CONFIG ══ -->
+<div id="fb-config-screen">
+  <div style="text-align:center">
+    <div style="font-size:2.5rem;font-weight:700;letter-spacing:.15em;color:var(--accent);text-shadow:0 0 40px rgba(255,104,64,.3)">MASTERMIND</div>
+    <div style="font-family:'Space Mono',monospace;font-size:.75rem;color:var(--muted);letter-spacing:.2em;margin-top:6px">WORKSHOP EDITION</div>
+  </div>
+  <div class="fb-box">
+    <h2>🔥 Firebase Setup</h2>
+    <p>Enter your Firebase project credentials below. You only need to do this once — the settings are saved in the browser.</p>
+    <div class="fb-step"><strong>Step 1:</strong> Go to <strong>console.firebase.google.com</strong> → Create project → name it "mastermind-workshop"</div>
+    <div class="fb-step"><strong>Step 2:</strong> In the project: <strong>Build → Realtime Database → Create database</strong> → choose "Start in test mode"</div>
+    <div class="fb-step"><strong>Step 3:</strong> Go to <strong>Project Settings (gear icon) → General → Your apps → Add app → Web (&lt;/&gt;)</strong> → register app → copy the config values below</div>
+    <div class="fb-field" style="margin-top:20px">
+      <label>API Key</label>
+      <input type="text" id="fb-api-key" placeholder="AIzaSy...">
+    </div>
+    <div class="fb-field">
+      <label>Auth Domain</label>
+      <input type="text" id="fb-auth-domain" placeholder="mastermind-workshop.firebaseapp.com">
+    </div>
+    <div class="fb-field">
+      <label>Database URL</label>
+      <input type="text" id="fb-db-url" placeholder="https://mastermind-workshop-default-rtdb.firebaseio.com">
+    </div>
+    <div class="fb-field">
+      <label>Project ID</label>
+      <input type="text" id="fb-project-id" placeholder="mastermind-workshop">
+    </div>
+    <div style="margin-top:20px">
+      <button class="btn primary" onclick="saveFbConfig()" style="width:100%;font-size:1rem;padding:14px">Connect to Firebase →</button>
+    </div>
+    <div id="fb-error" class="msg err hidden" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- ══ SPLASH ══ -->
+<div id="splash" class="hidden">
+  <div class="splash-logo">
+    <h1>Mastermind</h1>
+    <p>Workshop Edition</p>
+  </div>
+  <div class="lang-grid">
+    <button class="lang-btn" onclick="setLang('en')"><span class="lang-flag">🇺🇸</span>English</button>
+    <button class="lang-btn" onclick="setLang('de')"><span class="lang-flag">🇩🇪</span>Deutsch</button>
+    <button class="lang-btn" onclick="setLang('zh')"><span class="lang-flag">🇨🇳</span>中文</button>
+    <button class="lang-btn" onclick="setLang('sk')"><span class="lang-flag">🇸🇰</span>Slovensky</button>
+    <button class="lang-btn" onclick="setLang('pl')"><span class="lang-flag">🇵🇱</span>Polski</button>
+  </div>
+  <button class="back-btn" onclick="resetFbConfigModal()" style="font-size:.72rem;opacity:.4">⚙ Firebase neu konfigurieren</button>
+</div>
+
+<!-- ══ ROLE SELECT ══ -->
+<div id="role-select" class="hidden">
+  <div style="text-align:center">
+    <div style="font-size:2rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)">Mastermind</div>
+    <div style="font-size:.78rem;color:var(--muted);font-family:'Space Mono',monospace;margin-top:4px" id="rs-sub"></div>
+  </div>
+  <div class="role-grid">
+    <div class="role-card" onclick="goAdminPin()">
+      <div class="role-icon">🔧</div>
+      <div class="role-name" id="role-admin-name"></div>
+      <div class="role-desc" id="role-admin-desc"></div>
+    </div>
+    <div class="role-card" onclick="showTeamSelect()">
+      <div class="role-icon">🎮</div>
+      <div class="role-name" id="role-team-name"></div>
+      <div class="role-desc" id="role-team-desc"></div>
+    </div>
+  </div>
+  <div id="team-select-area" class="hidden" style="width:100%;max-width:480px">
+    <div class="card">
+      <div class="card-title" id="ts-title"></div>
+      <div id="team-picker-list" style="display:flex;flex-direction:column;gap:6px"></div>
+      <div id="team-picker-empty" style="font-size:.82rem;color:var(--muted);font-family:'Space Mono',monospace"></div>
+    </div>
+  </div>
+  <button class="back-btn" onclick="backToLang()">← <span id="back-lang-label"></span></button>
+</div>
+
+<!-- ══ ADMIN PIN ══ -->
+<div id="admin-pin" class="hidden">
+  <div class="pin-box">
+    <h2 id="pin-title"></h2>
+    <p id="pin-sub"></p>
+    <input type="password" class="pin-input" id="pin-input" onkeydown="if(event.key==='Enter')checkPin()">
+    <div class="pin-error" id="pin-error"></div>
+    <div style="margin-top:20px;display:flex;gap:10px;justify-content:center">
+      <button class="btn" onclick="backToRole()" id="pin-back-btn"></button>
+      <button class="btn primary" onclick="checkPin()" id="pin-enter-btn"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN VIEW ══ -->
+<div id="admin-view" class="hidden">
+  <div class="hdr">
+    <div class="hdr-title">Mastermind</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="badge admin" id="hdr-admin-badge">Admin</span>
+      <button class="btn" style="font-size:.78rem;padding:6px 14px" onclick="logout()" id="btn-logout"></button>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="adminTab('setup',this)" id="tab-setup-lbl"></div>
+    <div class="tab" onclick="adminTab('teams',this)" id="tab-teams-lbl"></div>
+    <div class="tab" onclick="adminTab('dashboard',this)" id="tab-dash-lbl"></div>
+  </div>
+
+  <!-- Setup Tab -->
+  <div id="atab-setup">
+    <div class="card">
+      <div class="card-title" id="lbl-set-code"></div>
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:10px;font-family:'Space Mono',monospace" id="lbl-set-hint"></div>
+      <div class="slots">
+        <div class="slot active-slot" id="asl-0" onclick="selectASlot(0)"><span>+</span></div>
+        <div class="slot" id="asl-1" onclick="selectASlot(1)"><span>+</span></div>
+        <div class="slot" id="asl-2" onclick="selectASlot(2)"><span>+</span></div>
+        <div class="slot" id="asl-3" onclick="selectASlot(3)"><span>+</span></div>
+      </div>
+      <div class="palette" id="admin-palette"></div>
+      <div class="toggle-row">
+        <label class="tog"><input type="checkbox" id="allow-dups" checked><span class="tog-sl"></span></label>
+        <span class="tog-label" id="lbl-dups"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin:10px 0 18px">
+        <span style="font-size:.85rem;color:var(--muted);font-family:'Space Mono',monospace" id="lbl-max-tries"></span>
+        <select id="max-tries"><option value="8">8</option><option value="10" selected>10</option><option value="12">12</option></select>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="adminClearCode()" id="btn-reset"></button>
+        <button class="btn" onclick="adminRandom()" id="btn-random"></button>
+        <button class="btn primary" onclick="saveChallenge()" id="btn-save-ch"></button>
+      </div>
+      <div id="setup-msg"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" id="lbl-cur-ch"></div>
+      <div id="current-ch-display" style="font-size:.82rem;color:var(--muted);font-family:'Space Mono',monospace"></div>
+    </div>
+  </div>
+
+  <!-- Background Image Card -->
+  <div class="card" id="atab-setup-bg" style="display:none">
+    <div class="card-title" id="lbl-bg-title">Background image</div>
+    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+      <div id="bg-preview" style="width:120px;height:80px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:#111 center/cover no-repeat;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+        <span style="font-size:1.6rem;opacity:.3">🖼</span>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:.78rem;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:12px;line-height:1.6" id="lbl-bg-hint">Upload an image file (JPG, PNG, WebP). It will be stored locally and shown as background for all visitors on this device.</div>
+        <div class="btn-row">
+          <label class="btn" style="cursor:pointer" id="lbl-bg-upload-btn">
+            📁 <span id="lbl-bg-choose">Choose image</span>
+            <input type="file" accept="image/*" id="bg-file-input" style="display:none" onchange="handleBgUpload(this)">
+          </label>
+          <button class="btn danger" onclick="removeBg()" id="btn-bg-remove" style="display:none"></button>
+        </div>
+        <div id="bg-msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teams Tab -->
+  <div id="atab-teams" class="hidden">
+    <div class="card">
+      <div class="card-title" id="lbl-manage-teams"></div>
+      <div class="team-input-row">
+        <input type="text" id="new-team-inp" style="flex:1;max-width:300px" onkeydown="if(event.key==='Enter')addTeam()">
+        <button class="btn primary" onclick="addTeam()" id="btn-add-team"></button>
+      </div>
+      <div id="team-list-admin"></div>
+      <div id="team-msg"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" id="lbl-team-links"></div>
+      <div style="font-size:.78rem;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:14px" id="lbl-link-hint"></div>
+      <div id="team-links-list"></div>
+    </div>
+  </div>
+
+  <!-- Dashboard Tab -->
+  <div id="atab-dashboard" class="hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <span style="font-size:.78rem;color:var(--muted);font-family:'Space Mono',monospace" id="lbl-refresh-hint"></span>
+      <button class="btn" style="font-size:.78rem;padding:6px 14px" onclick="loadDashboard()" id="btn-refresh"></button>
+    </div>
+    <div class="dash-grid" id="dash-grid"></div>
+  </div>
+</div>
+
+<!-- ══ TEAM VIEW ══ -->
+<div id="team-view" class="hidden">
+  <div class="hdr">
+    <div>
+      <div class="hdr-title">Mastermind</div>
+      <div style="font-size:.72rem;color:var(--muted);font-family:'Space Mono',monospace;margin-top:2px" id="team-hdr-name"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <!-- Language switcher -->
+      <div style="position:relative" id="lang-switcher">
+        <button onclick="toggleLangMenu()" style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:6px 12px;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.82rem;font-weight:600;letter-spacing:.04em" id="lang-flag-btn">
+          <span id="tv-lang-flag">🇺🇸</span><span style="color:var(--muted)">▾</span>
+        </button>
+        <div id="lang-menu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);overflow:hidden;z-index:50;min-width:130px;box-shadow:0 8px 24px rgba(0,0,0,.5)">
+          <button onclick="switchTeamLang('en','🇺🇸')" class="lang-menu-item">🇺🇸 English</button>
+          <button onclick="switchTeamLang('de','🇩🇪')" class="lang-menu-item">🇩🇪 Deutsch</button>
+          <button onclick="switchTeamLang('zh','🇨🇳')" class="lang-menu-item">🇨🇳 中文</button>
+          <button onclick="switchTeamLang('sk','🇸🇰')" class="lang-menu-item">🇸🇰 Slovensky</button>
+          <button onclick="switchTeamLang('pl','🇵🇱')" class="lang-menu-item">🇵🇱 Polski</button>
+        </div>
+      </div>
+      <div style="text-align:right;margin-right:4px">
+        <div style="font-size:1.8rem;font-weight:700;line-height:1;color:var(--accent)"><span id="tv-used">0</span>/<span id="tv-max">10</span></div>
+        <div style="font-size:.65rem;color:var(--muted);font-family:'Space Mono',monospace" id="lbl-attempts"></div>
+      </div>
+      <button class="btn" style="font-size:.78rem;padding:6px 14px" onclick="closeTab()" id="btn-team-exit"></button>
+      <button class="btn" style="font-size:.78rem;padding:6px 14px;border-color:rgba(255,104,64,.4);color:var(--accent)" onclick="teamGoAdmin()" id="btn-team-admin">🔧 Admin</button>
+    </div>
+  </div>
+  <div id="tv-loading" class="loading"><div class="spinner"></div><span id="lbl-loading"></span></div>
+  <div id="tv-content" class="hidden">
+    <div class="game-layout">
+      <div class="history-panel">
+        <div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;font-family:'Space Mono',monospace" id="lbl-history"></div>
+        <div id="tv-history"></div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-title" id="lbl-cur-guess"></div>
+          <div class="slots">
+            <div class="slot active-slot" id="tvsl-0" onclick="selectTSlot(0)"><span>+</span></div>
+            <div class="slot" id="tvsl-1" onclick="selectTSlot(1)"><span>+</span></div>
+            <div class="slot" id="tvsl-2" onclick="selectTSlot(2)"><span>+</span></div>
+            <div class="slot" id="tvsl-3" onclick="selectTSlot(3)"><span>+</span></div>
+          </div>
+          <div class="palette" id="tv-palette"></div>
+          <div class="btn-row">
+            <button class="btn" onclick="tvClearGuess()" id="btn-tv-reset"></button>
+            <button class="btn primary" id="btn-submit" onclick="submitGuess()" disabled></button>
+          </div>
+          <div id="tv-msg"></div>
+        </div>
+        <div class="card" style="font-size:.82rem">
+          <div class="card-title" id="lbl-legend"></div>
+          <div style="display:flex;gap:20px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px"><div class="hint b" style="width:14px;height:14px;flex-shrink:0"></div><span style="color:var(--muted)" id="lbl-black-hint"></span></div>
+            <div style="display:flex;align-items:center;gap:8px"><div class="hint w" style="width:14px;height:14px;flex-shrink:0"></div><span style="color:var(--muted)" id="lbl-white-hint"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<!-- Overlays -->
+<div class="overlay" id="ov-win">
+  <div class="ov-box">
+    <button onclick="document.getElementById('ov-win').classList.remove('show')" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.3rem;color:var(--muted);cursor:pointer;line-height:1;padding:4px 8px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">✕</button>
+    <div class="ov-icon">🏆</div>
+    <div class="ov-title" style="color:var(--green)" id="ov-win-title"></div>
+    <div class="ov-code" id="ov-win-code"></div>
+    <div class="ov-sub" id="ov-win-txt"></div>
+    <button class="btn" onclick="document.getElementById('ov-win').classList.remove('show')" style="margin-top:20px;font-size:.85rem;padding:8px 24px" id="btn-ov-win-close">✕ Close</button>
+  </div>
+</div>
+<div class="overlay" id="ov-lose">
+  <div class="ov-box">
+    <button onclick="document.getElementById('ov-lose').classList.remove('show')" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.3rem;color:var(--muted);cursor:pointer;line-height:1;padding:4px 8px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">✕</button>
+    <div class="ov-icon">💀</div>
+    <div class="ov-title" style="color:var(--red)" id="ov-lose-title"></div>
+    <div class="ov-sub" id="ov-lose-sub"></div>
+    <div class="ov-code" id="ov-lose-code"></div>
+    <button class="btn" onclick="document.getElementById('ov-lose').classList.remove('show')" style="margin-top:20px;font-size:.85rem;padding:8px 24px" id="btn-ov-lose-close">✕ Close</button>
+  </div>
+</div>
+
+<!-- ══ SECURE PIN MODAL ══ -->
+<div class="overlay" id="ov-pin-modal">
+  <div class="ov-box" style="max-width:340px">
+    <div class="ov-icon" id="opm-icon">🔒</div>
+    <div class="ov-title" style="font-size:1.3rem" id="opm-title">Admin Access</div>
+    <div class="ov-sub" style="margin-bottom:20px" id="opm-sub">Enter the admin code</div>
+    <div style="position:relative;margin-bottom:8px">
+      <input type="password" id="opm-input"
+        style="width:100%;padding:13px 48px 13px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:rgba(255,255,255,.07);font-family:'Space Mono',monospace;font-size:1rem;color:var(--text);letter-spacing:.12em;outline:none;transition:border-color .2s"
+        onkeydown="if(event.key==='Enter')opmConfirm()"
+        onfocus="this.style.borderColor='var(--accent)'"
+        onblur="this.style.borderColor='var(--border2)'">
+      <button onclick="opmToggleEye()" id="opm-eye"
+        style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:1.1rem;color:var(--muted);cursor:pointer;padding:4px;line-height:1">👁</button>
+    </div>
+    <div id="opm-error" style="font-size:.75rem;color:var(--red);font-family:'Space Mono',monospace;min-height:18px;margin-bottom:14px;text-align:left"></div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn" onclick="opmCancel()" id="opm-cancel-btn">Cancel</button>
+      <button class="btn primary" onclick="opmConfirm()" id="opm-confirm-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+// ════════════════════════════════════════════
+// TRANSLATIONS
+// ════════════════════════════════════════════
+const T={
+  en:{
+    rs_sub:'Choose your role',
+    role_admin_name:'Admin',role_admin_desc:'Create challenge & monitor teams',
+    role_team_name:'Team',role_team_desc:'Crack the secret code',
+    back_lang:'Change language',
+    pin_title:'Admin Access',pin_sub:'Enter the admin code to continue',
+    pin_back:'Back',pin_enter:'Enter',pin_wrong:'Wrong code. Try again.',
+    lbl_set_code:'Set secret code',lbl_set_hint:'Choose 4 colors — order matters',
+    lbl_dups:'Colors may appear multiple times',lbl_max_tries:'Max. attempts:',
+    btn_reset:'Reset',btn_random:'🎲 Random',btn_save:'Save Challenge',
+    lbl_cur_ch:'Current challenge',lbl_no_ch:'No challenge saved yet.',
+    lbl_manage_teams:'Manage teams',btn_add_team:'+ Add',
+    lbl_team_links:'Team links',lbl_link_hint:'Click a link to copy it.',
+    lbl_refresh_hint:'Live — updates automatically',
+    btn_refresh:'↻ Refresh',btn_logout:'Exit',btn_team_exit:'Exit',
+    lbl_attempts:'Attempts',lbl_loading:'Loading challenge...',
+    lbl_history:'History',lbl_cur_guess:'Current guess',lbl_legend:'Legend',
+    lbl_black_hint:'Correct color & position',lbl_white_hint:'Correct color, wrong position',
+    btn_submit:'✓ Submit',btn_tv_reset:'Reset',
+    ov_win_title:'Solved!',ov_lose_title:'Not solved',ov_lose_sub:'The secret code was:',
+    ov_win_txt:(n,m)=>`Solved in ${n} of ${m} attempts!`,
+    dash_waiting:'Waiting for game start...',dash_no_tries:'No attempts yet',
+    dash_solved:(n)=>`Solved in ${n} attempt(s)`,dash_lost:'Not solved',
+    dash_attempt:(n,m)=>`Attempt ${n}/${m}`,
+    team_placeholder:'Team name...',team_exists:'Team already exists.',
+    team_added:(n)=>`Team "${n}" added.`,team_enter:'Please enter a name.',
+    no_teams:'No teams yet.',ch_saved:'Challenge saved!',
+    ch_fill:'Please fill all 4 positions.',ch_save_err:'Save error.',
+    dups_yes:'Yes',dups_no:'No',copied:'Link copied!',
+    no_challenge:'No active challenge.\nPlease wait for the admin.',
+    colors:['Red','Blue','Green','Yellow','Orange','Violet'],
+    tab_setup:'① Setup',tab_teams:'② Teams',tab_dash:'③ Dashboard',
+    ts_title:'Select your team',no_teams_picker:'No teams yet. Contact your admin.',remove:'Remove',
+    session_ended:'Session ended',session_close:'Please close this tab manually.',
+  },
+  de:{
+    rs_sub:'Wähle deine Rolle',
+    role_admin_name:'Admin',role_admin_desc:'Challenge erstellen & Teams überwachen',
+    role_team_name:'Team',role_team_desc:'Geheimcode knacken',
+    back_lang:'Sprache wechseln',
+    pin_title:'Admin-Zugang',pin_sub:'Gib den Admin-Code ein',
+    pin_back:'Zurück',pin_enter:'Weiter',pin_wrong:'Falscher Code. Nochmal versuchen.',
+    lbl_set_code:'Geheimcode festlegen',lbl_set_hint:'Wähle 4 Farben – Reihenfolge zählt',
+    lbl_dups:'Farben dürfen mehrfach vorkommen',lbl_max_tries:'Max. Versuche:',
+    btn_reset:'Zurücksetzen',btn_random:'🎲 Zufällig',btn_save:'Challenge speichern',
+    lbl_cur_ch:'Aktuelle Challenge',lbl_no_ch:'Noch keine Challenge gespeichert.',
+    lbl_manage_teams:'Teams verwalten',btn_add_team:'+ Hinzufügen',
+    lbl_team_links:'Team-Links',lbl_link_hint:'Klicke einen Link um ihn zu kopieren.',
+    lbl_refresh_hint:'Live – aktualisiert automatisch',
+    btn_refresh:'↻ Aktualisieren',btn_logout:'Beenden',btn_team_exit:'Beenden',
+    lbl_attempts:'Versuche',lbl_loading:'Challenge wird geladen...',
+    lbl_history:'Verlauf',lbl_cur_guess:'Aktueller Tipp',lbl_legend:'Legende',
+    lbl_black_hint:'Richtige Farbe & Position',lbl_white_hint:'Richtige Farbe, falsche Position',
+    btn_submit:'✓ Abgeben',btn_tv_reset:'Zurücksetzen',
+    ov_win_title:'Gelöst!',ov_lose_title:'Nicht geschafft',ov_lose_sub:'Der Geheimcode war:',
+    ov_win_txt:(n,m)=>`Gelöst in ${n} von ${m} Versuchen!`,
+    dash_waiting:'Wartet auf Spielstart...',dash_no_tries:'Noch keine Versuche',
+    dash_solved:(n)=>`Gelöst in ${n} Versuch(en)`,dash_lost:'Nicht gelöst',
+    dash_attempt:(n,m)=>`Versuch ${n}/${m}`,
+    team_placeholder:'Teamname...',team_exists:'Team existiert bereits.',
+    team_added:(n)=>`Team "${n}" hinzugefügt.`,team_enter:'Bitte Namen eingeben.',
+    no_teams:'Noch keine Teams.',ch_saved:'Challenge gespeichert!',
+    ch_fill:'Bitte alle 4 Positionen befüllen.',ch_save_err:'Speicherfehler.',
+    dups_yes:'Ja',dups_no:'Nein',copied:'Link kopiert!',
+    no_challenge:'Keine aktive Challenge.\nBitte warte auf den Admin.',
+    colors:['Rot','Blau','Grün','Gelb','Orange','Violett'],
+    tab_setup:'① Setup',tab_teams:'② Teams',tab_dash:'③ Dashboard',
+    ts_title:'Team auswählen',no_teams_picker:'Keine Teams. Bitte Admin kontaktieren.',remove:'Entfernen',
+    session_ended:'Session beendet',session_close:'Bitte diesen Tab manuell schließen.',
+  },
+  zh:{
+    rs_sub:'选择你的角色',
+    role_admin_name:'管理员',role_admin_desc:'创建挑战并监控队伍',
+    role_team_name:'队伍',role_team_desc:'破解密码',
+    back_lang:'切换语言',
+    pin_title:'管理员入口',pin_sub:'请输入管理员密码',
+    pin_back:'返回',pin_enter:'确认',pin_wrong:'密码错误，请重试。',
+    lbl_set_code:'设置密码',lbl_set_hint:'选择4种颜色——顺序很重要',
+    lbl_dups:'颜色可以重复使用',lbl_max_tries:'最大尝试次数：',
+    btn_reset:'重置',btn_random:'🎲 随机',btn_save:'保存挑战',
+    lbl_cur_ch:'当前挑战',lbl_no_ch:'尚未保存挑战。',
+    lbl_manage_teams:'管理队伍',btn_add_team:'+ 添加',
+    lbl_team_links:'队伍链接',lbl_link_hint:'点击链接即可复制。',
+    lbl_refresh_hint:'实时更新',
+    btn_refresh:'↻ 刷新',btn_logout:'退出',btn_team_exit:'退出',
+    lbl_attempts:'尝试',lbl_loading:'加载挑战中...',
+    lbl_history:'历史记录',lbl_cur_guess:'当前猜测',lbl_legend:'说明',
+    lbl_black_hint:'颜色和位置正确',lbl_white_hint:'颜色正确，位置错误',
+    btn_submit:'✓ 提交',btn_tv_reset:'重置',
+    ov_win_title:'成功破解！',ov_lose_title:'未能破解',ov_lose_sub:'密码是：',
+    ov_win_txt:(n,m)=>`用了${n}次（共${m}次）破解！`,
+    dash_waiting:'等待游戏开始...',dash_no_tries:'暂无尝试',
+    dash_solved:(n)=>`用${n}次破解`,dash_lost:'未能破解',
+    dash_attempt:(n,m)=>`第${n}/${m}次`,
+    team_placeholder:'队伍名称...',team_exists:'队伍已存在。',
+    team_added:(n)=>`队伍"${n}"已添加。`,team_enter:'请输入名称。',
+    no_teams:'暂无队伍。',ch_saved:'挑战已保存！',
+    ch_fill:'请填写全部4个位置。',ch_save_err:'保存失败。',
+    dups_yes:'是',dups_no:'否',copied:'链接已复制！',
+    no_challenge:'暂无挑战。\n请等待管理员。',
+    colors:['红','蓝','绿','黄','橙','紫'],
+    tab_setup:'① 设置',tab_teams:'② 队伍',tab_dash:'③ 面板',
+    ts_title:'选择队伍',no_teams_picker:'暂无队伍，请联系管理员。',remove:'删除',
+    session_ended:'会话已结束',session_close:'请手动关闭此标签页。',
+  },
+  sk:{
+    rs_sub:'Vyber svoju rolu',
+    role_admin_name:'Admin',role_admin_desc:'Vytvor výzvu a sleduj tímy',
+    role_team_name:'Tím',role_team_desc:'Prelom tajný kód',
+    back_lang:'Zmeniť jazyk',
+    pin_title:'Prístup pre admina',pin_sub:'Zadaj admin kód',
+    pin_back:'Späť',pin_enter:'Potvrdiť',pin_wrong:'Nesprávny kód. Skús znova.',
+    lbl_set_code:'Nastav tajný kód',lbl_set_hint:'Vyber 4 farby – poradie je dôležité',
+    lbl_dups:'Farby sa môžu opakovať',lbl_max_tries:'Max. pokusov:',
+    btn_reset:'Resetovať',btn_random:'🎲 Náhodne',btn_save:'Uložiť výzvu',
+    lbl_cur_ch:'Aktuálna výzva',lbl_no_ch:'Žiadna výzva nie je uložená.',
+    lbl_manage_teams:'Spravovať tímy',btn_add_team:'+ Pridať',
+    lbl_team_links:'Odkazy tímov',lbl_link_hint:'Klikni na odkaz pre kopírovanie.',
+    lbl_refresh_hint:'Živé – aktualizuje sa automaticky',
+    btn_refresh:'↻ Obnoviť',btn_logout:'Odísť',btn_team_exit:'Odísť',
+    lbl_attempts:'Pokusy',lbl_loading:'Načítavam výzvu...',
+    lbl_history:'História',lbl_cur_guess:'Aktuálny tip',lbl_legend:'Legenda',
+    lbl_black_hint:'Správna farba a pozícia',lbl_white_hint:'Správna farba, nesprávna pozícia',
+    btn_submit:'✓ Odoslať',btn_tv_reset:'Resetovať',
+    ov_win_title:'Vyriešené!',ov_lose_title:'Nevyriešené',ov_lose_sub:'Tajný kód bol:',
+    ov_win_txt:(n,m)=>`Vyriešené v ${n} z ${m} pokusov!`,
+    dash_waiting:'Čaká na začiatok...',dash_no_tries:'Žiadne pokusy',
+    dash_solved:(n)=>`Vyriešené v ${n} pokuse(och)`,dash_lost:'Nevyriešené',
+    dash_attempt:(n,m)=>`Pokus ${n}/${m}`,
+    team_placeholder:'Názov tímu...',team_exists:'Tím už existuje.',
+    team_added:(n)=>`Tím "${n}" bol pridaný.`,team_enter:'Zadaj názov.',
+    no_teams:'Žiadne tímy.',ch_saved:'Výzva uložená!',
+    ch_fill:'Prosím vyplň všetky 4 pozície.',ch_save_err:'Chyba pri ukladaní.',
+    dups_yes:'Áno',dups_no:'Nie',copied:'Odkaz skopírovaný!',
+    no_challenge:'Žiadna aktívna výzva.\nPočkaj na admina.',
+    colors:['Červená','Modrá','Zelená','Žltá','Oranžová','Fialová'],
+    tab_setup:'① Nastavenie',tab_teams:'② Tímy',tab_dash:'③ Prehľad',
+    ts_title:'Vyber tím',no_teams_picker:'Žiadne tímy. Kontaktuj admina.',remove:'Odstrániť',
+    session_ended:'Relácia ukončená',session_close:'Prosím zatvor tento tab manuálne.',
+  },
+  pl:{
+    rs_sub:'Wybierz swoją rolę',
+    role_admin_name:'Admin',role_admin_desc:'Utwórz wyzwanie i śledź drużyny',
+    role_team_name:'Drużyna',role_team_desc:'Złam tajny kod',
+    back_lang:'Zmień język',
+    pin_title:'Dostęp admina',pin_sub:'Wprowadź kod admina',
+    pin_back:'Wróć',pin_enter:'Wejdź',pin_wrong:'Błędny kod. Spróbuj ponownie.',
+    lbl_set_code:'Ustaw tajny kod',lbl_set_hint:'Wybierz 4 kolory – kolejność ma znaczenie',
+    lbl_dups:'Kolory mogą się powtarzać',lbl_max_tries:'Maks. prób:',
+    btn_reset:'Resetuj',btn_random:'🎲 Losowo',btn_save:'Zapisz wyzwanie',
+    lbl_cur_ch:'Aktualne wyzwanie',lbl_no_ch:'Brak zapisanego wyzwania.',
+    lbl_manage_teams:'Zarządzaj drużynami',btn_add_team:'+ Dodaj',
+    lbl_team_links:'Linki drużyn',lbl_link_hint:'Kliknij link aby go skopiować.',
+    lbl_refresh_hint:'Na żywo – aktualizuje się automatycznie',
+    btn_refresh:'↻ Odśwież',btn_logout:'Wyjdź',btn_team_exit:'Wyjdź',
+    lbl_attempts:'Próby',lbl_loading:'Ładowanie wyzwania...',
+    lbl_history:'Historia',lbl_cur_guess:'Aktualne odgadnięcie',lbl_legend:'Legenda',
+    lbl_black_hint:'Właściwy kolor i pozycja',lbl_white_hint:'Właściwy kolor, zła pozycja',
+    btn_submit:'✓ Zatwierdź',btn_tv_reset:'Resetuj',
+    ov_win_title:'Rozwiązano!',ov_lose_title:'Nie rozwiązano',ov_lose_sub:'Tajny kod to był:',
+    ov_win_txt:(n,m)=>`Rozwiązano w ${n} z ${m} prób!`,
+    dash_waiting:'Oczekuje na start...',dash_no_tries:'Brak prób',
+    dash_solved:(n)=>`Rozwiązano w ${n} próbie/ach`,dash_lost:'Nie rozwiązano',
+    dash_attempt:(n,m)=>`Próba ${n}/${m}`,
+    team_placeholder:'Nazwa drużyny...',team_exists:'Drużyna już istnieje.',
+    team_added:(n)=>`Drużyna "${n}" dodana.`,team_enter:'Wpisz nazwę.',
+    no_teams:'Brak drużyn.',ch_saved:'Wyzwanie zapisane!',
+    ch_fill:'Proszę wypełnić wszystkie 4 pozycje.',ch_save_err:'Błąd zapisu.',
+    dups_yes:'Tak',dups_no:'Nie',copied:'Link skopiowany!',
+    no_challenge:'Brak aktywnego wyzwania.\nPoczekaj na admina.',
+    colors:['Czerwony','Niebieski','Zielony','Żółty','Pomarańczowy','Fioletowy'],
+    tab_setup:'① Ustawienia',tab_teams:'② Drużyny',tab_dash:'③ Panel',
+    ts_title:'Wybierz drużynę',no_teams_picker:'Brak drużyn. Skontaktuj się z adminem.',remove:'Usuń',
+    session_ended:'Sesja zakończona',session_close:'Proszę ręcznie zamknąć tę kartę.',
+  }
+};
+
+const COLORS=['#ef4444','#3b82f6','#22c55e','#eab308','#f97316','#a855f7'];
+const ADMIN_PIN='9205u23fj320i9jfAE';
+
+let lang='en', t=T.en;
+let db=null;
+let role=null, currentTeamId=null, currentTeamName=null;
+let adminCode=[null,null,null,null], adminSlot=0;
+let tvCode=[null,null,null,null], tvSlot=0;
+let challenge=null, gameState=null, gameOver=false;
+let teams=[];
+let dashListeners=[], gameStateListener=null;
+
+// ════ FIREBASE ════
+function saveFbConfig(){
+  const apiKey=document.getElementById('fb-api-key').value.trim();
+  const authDomain=document.getElementById('fb-auth-domain').value.trim();
+  const dbUrl=document.getElementById('fb-db-url').value.trim();
+  const projectId=document.getElementById('fb-project-id').value.trim();
+  if(!apiKey||!dbUrl||!projectId){
+    showFbError('Please fill in at least API Key, Database URL, and Project ID.');return;
+  }
+  const cfg={apiKey,authDomain,databaseURL:dbUrl,projectId};
+  localStorage.setItem('mm_fb_config',JSON.stringify(cfg));
+  initFirebase(cfg);
+}
+
+function initFirebase(cfg){
+  try{
+    if(!firebase.apps.length){firebase.initializeApp(cfg);}
+    db=firebase.database();
+    // quick connection test
+    db.ref('.info/connected').once('value').then(()=>{
+      hide('fb-config-screen');
+      checkUrlParams();
+    }).catch(e=>{showFbError('Connection failed: '+e.message);});
+  }catch(e){showFbError('Firebase error: '+e.message);}
+}
+
+function showFbError(msg){
+  const el=document.getElementById('fb-error');
+  el.textContent=msg;el.classList.remove('hidden');
+}
+
+function resetFbConfig(){
+  localStorage.removeItem('mm_fb_config');
+  location.reload();
+}
+function resetFbConfigModal(){
+  opmOpen('🔥','Firebase Reset','Enter admin code to reconfigure Firebase',()=>{
+    resetFbConfig();
+  });
+}
+
+// ════ DB HELPERS ════
+async function dbGet(path){
+  const snap=await db.ref(path).once('value');
+  return snap.val();
+}
+async function dbSet(path,val){
+  await db.ref(path).set(val);
+}
+function dbListen(path,cb){
+  const ref=db.ref(path);
+  ref.on('value',snap=>cb(snap.val()));
+  return ref;
+}
+function dbOff(ref){if(ref)ref.off();}
+
+// ════ INIT ════
+window.onload=()=>{
+  const savedCfg=localStorage.getItem('mm_fb_config');
+  if(savedCfg){
+    try{initFirebase(JSON.parse(savedCfg));}
+    catch(e){show('fb-config-screen');}
+  } else {
+    show('fb-config-screen');
+  }
+};
+
+async function checkUrlParams(){
+  const params=new URLSearchParams(window.location.search);
+  const urlTeam=params.get('team');
+  const urlLang=params.get('lang');
+  if(urlLang&&T[urlLang]){lang=urlLang;t=T[urlLang];}
+  else{const sl=localStorage.getItem('mm_lang');if(sl&&T[sl]){lang=sl;t=T[sl];}}
+  if(urlTeam){
+    applyLang();
+    // Look up the team name from Firebase using the token
+    const teamData=await dbGet('teams/'+urlTeam);
+    const resolvedName=teamData?teamData.name:urlTeam;
+    enterAsTeam(urlTeam,resolvedName);
+  } else {
+    show('splash');
+  }
+}
+
+// ════ LANG ════
+function setLang(l){
+  lang=l;t=T[l];
+  localStorage.setItem('mm_lang',l);
+  applyLang();
+  hide('splash');show('role-select');
+}
+function applyLang(){
+  const s=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  const p=(id,v)=>{const e=document.getElementById(id);if(e)e.placeholder=v;};
+  s('rs-sub',t.rs_sub);
+  s('role-admin-name',t.role_admin_name);s('role-admin-desc',t.role_admin_desc);
+  s('role-team-name',t.role_team_name);s('role-team-desc',t.role_team_desc);
+  s('back-lang-label',t.back_lang);
+  s('pin-title',t.pin_title);s('pin-sub',t.pin_sub);
+  s('pin-back-btn',t.pin_back);s('pin-enter-btn',t.pin_enter);
+  s('lbl-set-code',t.lbl_set_code);s('lbl-set-hint',t.lbl_set_hint);
+  s('lbl-dups',t.lbl_dups);s('lbl-max-tries',t.lbl_max_tries);
+  s('btn-reset',t.btn_reset);s('btn-random',t.btn_random);s('btn-save-ch',t.btn_save);
+  s('lbl-cur-ch',t.lbl_cur_ch);
+  s('lbl-manage-teams',t.lbl_manage_teams);s('btn-add-team',t.btn_add_team);
+  s('lbl-team-links',t.lbl_team_links);s('lbl-link-hint',t.lbl_link_hint);
+  s('lbl-refresh-hint',t.lbl_refresh_hint);
+  s('btn-refresh',t.btn_refresh);s('btn-logout',t.btn_logout);s('btn-team-exit',t.btn_team_exit);
+  s('lbl-attempts',t.lbl_attempts);s('lbl-loading',t.lbl_loading);
+  s('lbl-history',t.lbl_history);s('lbl-cur-guess',t.lbl_cur_guess);
+  s('lbl-legend',t.lbl_legend);s('lbl-black-hint',t.lbl_black_hint);s('lbl-white-hint',t.lbl_white_hint);
+  s('btn-submit',t.btn_submit);s('btn-tv-reset',t.btn_tv_reset);
+  s('ov-win-title',t.ov_win_title);s('ov-lose-title',t.ov_lose_title);s('ov-lose-sub',t.ov_lose_sub);
+  s('tab-setup-lbl',t.tab_setup);s('tab-teams-lbl',t.tab_teams);s('tab-dash-lbl',t.tab_dash);
+  s('ts-title',t.ts_title);
+  p('new-team-inp',t.team_placeholder);
+  const ncd=document.getElementById('current-ch-display');
+  if(ncd&&!ncd.dataset.hasChallenge)ncd.textContent=t.lbl_no_ch;
+}
+
+// ════ NAV ════
+function show(id){document.getElementById(id).classList.remove('hidden')}
+function hide(id){document.getElementById(id).classList.add('hidden')}
+function backToLang(){hide('role-select');hide('team-select-area');show('splash');}
+function backToRole(){hide('admin-pin');show('role-select');}
+
+function closeTab(){
+  const tl=t||T.en;
+  const ended=tl.session_ended||'Session ended';
+  const close=tl.session_close||'Please close this tab manually.';
+  try{ window.close(); }catch(e){}
+  try{ window.open('','_self','').close(); }catch(e){}
+  setTimeout(()=>{
+    if(!window.closed){
+      document.body.innerHTML=`<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0a0a12;font-family:'Rajdhani',sans-serif">
+        <div style="text-align:center;color:#f0f0f8">
+          <div style="font-size:3rem;margin-bottom:16px">✓</div>
+          <div style="font-size:1.4rem;font-weight:700;letter-spacing:.1em;margin-bottom:8px">${ended}</div>
+          <div style="font-size:.85rem;color:rgba(240,240,248,.45);font-family:monospace">${close}</div>
+        </div>
+      </div>`;
+    }
+  },200);
+}
+
+function teamGoAdmin(){
+  opmOpen('🔧','Admin Access','Enter admin code to access admin area',()=>{
+    doLogoutCleanup();
+    hide('team-view');
+    enterAdmin();
+  });
+}
+
+function logout(){
+  window.onpopstate=null;
+  doLogoutCleanup();
+  hide('admin-view');hide('team-view');
+  hide('team-select-area');
+  role=null;
+  show('role-select');
+}
+
+function doLogoutCleanup(){
+  window.onpopstate=null;
+  dashListeners.forEach(r=>dbOff(r));dashListeners=[];
+  if(gameStateListener){dbOff(gameStateListener);gameStateListener=null;}
+  document.getElementById('ov-win').classList.remove('show');
+  document.getElementById('ov-lose').classList.remove('show');
+  gameOver=false;gameState=null;tvCode=[null,null,null,null];tvSlot=0;
+}
+
+// ════ SECURE PIN MODAL ════
+let opmCallback=null;
+function opmOpen(icon,title,sub,callback){
+  opmCallback=callback;
+  document.getElementById('opm-icon').textContent=icon;
+  document.getElementById('opm-title').textContent=title;
+  document.getElementById('opm-sub').textContent=sub;
+  document.getElementById('opm-input').value='';
+  document.getElementById('opm-input').type='password';
+  document.getElementById('opm-eye').textContent='👁';
+  document.getElementById('opm-error').textContent='';
+  document.getElementById('ov-pin-modal').classList.add('show');
+  setTimeout(()=>document.getElementById('opm-input').focus(),100);
+}
+function opmConfirm(){
+  const val=document.getElementById('opm-input').value;
+  if(val!==ADMIN_PIN){
+    document.getElementById('opm-error').textContent=t?t.pin_wrong:'Wrong code. Try again.';
+    document.getElementById('opm-input').value='';
+    document.getElementById('opm-input').focus();
+    return;
+  }
+  document.getElementById('ov-pin-modal').classList.remove('show');
+  const cb=opmCallback;opmCallback=null;
+  if(cb)cb();
+}
+function opmToggleEye(){
+  const inp=document.getElementById('opm-input');
+  const eye=document.getElementById('opm-eye');
+  if(inp.type==='password'){inp.type='text';eye.textContent='🙈';}
+  else{inp.type='password';eye.textContent='👁';}
+}
+
+function goAdminPin(){
+  hide('role-select');
+  opmOpen('🔧','Admin Access',t?t.pin_sub:'Enter the admin code to continue',()=>{
+    enterAdmin();
+  });
+  // Store that we came from role-select so cancel can go back
+  document.getElementById('ov-pin-modal').dataset.from='role-select';
+}
+function opmCancel(){
+  const from=document.getElementById('ov-pin-modal').dataset.from;
+  document.getElementById('ov-pin-modal').classList.remove('show');
+  opmCallback=null;
+  if(from==='role-select')show('role-select');
+  delete document.getElementById('ov-pin-modal').dataset.from;
+}
+function checkPin(){
+  if(document.getElementById('pin-input').value===ADMIN_PIN){hide('admin-pin');enterAdmin();}
+  else document.getElementById('pin-error').textContent=t.pin_wrong;
+}
+
+function showTeamSelect(){
+  opmOpen('🎮',t?t.role_team_name:'Team',t?t.pin_sub:'Enter the admin code to continue',async()=>{
+    show('team-select-area');
+    const data=await dbGet('teams')||{};
+    teams=Object.values(data);
+    renderTeamPicker();
+  });
+  document.getElementById('ov-pin-modal').dataset.from='role-select';
+}
+
+function renderTeamPicker(){
+  const el=document.getElementById('team-picker-list');
+  const empty=document.getElementById('team-picker-empty');
+  if(!teams||teams.length===0){el.style.display='none';empty.textContent=t.no_teams_picker;return;}
+  el.style.display='flex';empty.textContent='';
+  el.innerHTML=teams.map(tm=>`<button class="btn" style="text-align:left;font-size:1rem;padding:12px 18px" onclick="enterAsTeam('${tm.id}','${tm.name.replace(/'/g,"\\'")}')">${tm.name}</button>`).join('');
+}
+
+// ════ ADMIN ════
+async function enterAdmin(){
+  hide('role-select');show('admin-view');applyLang();role='admin';
+  document.getElementById('atab-setup-bg').style.display='';
+  applyBgLang();
+  initBg();
+  buildPalette('admin-palette','pickAdminColor');
+  const ch=await dbGet('challenge');
+  if(ch){challenge=ch;renderCurrentChallenge(ch);}
+  else{document.getElementById('current-ch-display').textContent=t.lbl_no_ch;}
+  const data=await dbGet('teams')||{};
+  teams=Object.values(data);
+  renderTeamListAdmin();
+}
+
+// ════ TEAM ════
+async function enterAsTeam(id,name){
+  hide('role-select');
+  currentTeamId=id;currentTeamName=name;role='team';
+  // Push a history state so the browser back button can be intercepted
+  history.pushState({team:true},'','');
+  window.onpopstate=()=>{
+    history.pushState({team:true},'','');
+    opmOpen('🔒','Admin Required','Enter admin code to leave this page',()=>{
+      window.onpopstate=null;logout();
+    });
+  };
+  applyLang();show('team-view');
+  document.getElementById('team-hdr-name').textContent=currentTeamName;
+  initLangFlag();
+  buildPalette('tv-palette','pickTvColor');
+  show('tv-loading');hide('tv-content');
+
+  challenge=await dbGet('challenge');
+  if(!challenge){
+    document.getElementById('tv-loading').innerHTML=`<div style="padding:32px;text-align:center;color:var(--muted);font-family:'Space Mono',monospace;white-space:pre-line;line-height:1.8">${t.no_challenge}</div>`;
+    return;
+  }
+
+  const savedGs=await dbGet('gamestate/'+id);
+  gameState=savedGs||{guesses:[],won:false,lost:false};
+  gameOver=gameState.won||gameState.lost;
+  document.getElementById('tv-max').textContent=challenge.maxGuesses;
+  hide('tv-loading');show('tv-content');
+  renderHistory();updateTvProgress();
+
+  // Live listener für eigenen Gamestate (falls Admin reset macht)
+  gameStateListener=dbListen('gamestate/'+id,(gs)=>{
+    if(!gs)return;
+    gameState=gs;gameOver=gs.won||gs.lost;
+    renderHistory();updateTvProgress();
+  });
+
+  if(gameState.won)setTimeout(()=>showWin(),300);
+  else if(gameState.lost)setTimeout(()=>showLose(),300);
+  else if(gameOver)disableInput();
+}
+
+// ════ PALETTE & SLOTS ════
+function buildPalette(containerId,handlerName){
+  document.getElementById(containerId).innerHTML=COLORS.map((hex,i)=>
+    `<div style="position:relative;margin-bottom:22px"><div class="pchip" style="background:${hex}" onclick="${handlerName}('${hex}')" title="${t.colors[i]}"></div><span class="plabel">${t.colors[i]}</span></div>`
+  ).join('');
+}
+
+function pickAdminColor(hex){adminCode[adminSlot]=hex;updateASlots();if(adminSlot<3){adminSlot++;selectASlot(adminSlot);}}
+function selectASlot(i){
+  adminSlot=i;
+  for(let j=0;j<4;j++){
+    const el=document.getElementById('asl-'+j);
+    el.className='slot'+(j===i?' active-slot':'')+(adminCode[j]?' filled':'');
+    el.innerHTML=adminCode[j]?`<div class="clr" style="background:${adminCode[j]}" onclick="selectASlot(${j})"></div>`:'<span>+</span>';
+  }
+}
+function updateASlots(){selectASlot(adminSlot);}
+function adminClearCode(){adminCode=[null,null,null,null];adminSlot=0;for(let i=0;i<4;i++){const el=document.getElementById('asl-'+i);el.className='slot'+(i===0?' active-slot':'');el.innerHTML='<span>+</span>';}}
+function adminRandom(){
+  const dups=document.getElementById('allow-dups').checked;
+  adminCode=dups?Array.from({length:4},()=>COLORS[Math.floor(Math.random()*COLORS.length)]):[...COLORS].sort(()=>Math.random()-.5).slice(0,4);
+  adminSlot=0;updateASlots();
+}
+async function saveChallenge(){
+  if(adminCode.includes(null)){showMsg('setup-msg',t.ch_fill,'err');return;}
+  const ch={code:adminCode,allowDuplicates:document.getElementById('allow-dups').checked,maxGuesses:parseInt(document.getElementById('max-tries').value),createdAt:new Date().toISOString()};
+  try{
+    await dbSet('challenge',ch);
+    challenge=ch;
+    const el=document.getElementById('current-ch-display');el.dataset.hasChallenge='1';
+    showMsg('setup-msg',t.ch_saved,'ok');
+    renderCurrentChallenge(ch);
+  }catch(e){showMsg('setup-msg',t.ch_save_err,'err');}
+}
+function renderCurrentChallenge(ch){
+  const dots=ch.code.map(c=>`<div style="width:38px;height:38px;border-radius:50%;background:${c};border:2px solid rgba(255,255,255,.18);display:inline-block;margin-right:6px;vertical-align:middle"></div>`).join('');
+  document.getElementById('current-ch-display').innerHTML=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">${dots}<span style="font-size:.72rem;color:var(--muted);font-family:'Space Mono',monospace;margin-left:6px">Max: ${ch.maxGuesses} | Dups: ${ch.allowDuplicates?t.dups_yes:t.dups_no}</span></div>`;
+}
+
+// ════ TEAMS ADMIN ════
+async function addTeam(){
+  const inp=document.getElementById('new-team-inp');
+  const name=inp.value.trim();
+  if(!name){showMsg('team-msg',t.team_enter,'err');return;}
+  if(teams.find(x=>x.name.toLowerCase()===name.toLowerCase())){showMsg('team-msg',t.team_exists,'err');return;}
+  const id=randomToken();
+  const tm={name,id};
+  await dbSet('teams/'+id,tm);
+  teams.push(tm);
+  renderTeamListAdmin();inp.value='';
+  showMsg('team-msg',t.team_added(name),'ok');
+}
+async function removeTeam(id){
+  await db.ref('teams/'+id).remove();
+  teams=teams.filter(x=>x.id!==id);
+  renderTeamListAdmin();
+}
+async function resetTeam(id,name){
+  if(!confirm(`Reset game state for "${name}"?`))return;
+  await db.ref('gamestate/'+id).remove();
+  showMsg('team-msg',`↺ "${name}" reset.`,'ok');
+}
+function slugify(n){return n.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/__+/g,'_');}
+function randomToken(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let token='';
+  for(let i=0;i<20;i++) token+=chars[Math.floor(Math.random()*chars.length)];
+  return token;
+}
+function renderTeamListAdmin(){
+  const el=document.getElementById('team-list-admin');
+  if(!teams||teams.length===0){el.innerHTML=`<div style="font-size:.82rem;color:var(--muted);font-family:'Space Mono',monospace">${t.no_teams}</div>`;renderTeamLinks();return;}
+  const resetLbl=t.btn_reset||'Reset';
+  el.innerHTML=teams.map(x=>`
+    <div class="team-item">
+      <div class="team-name-text">${x.name}</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn" style="font-size:.75rem;padding:5px 12px;border-color:rgba(126,184,247,.3);color:var(--accent2)" onclick="resetTeam('${x.id}','${x.name}')" title="Reset game state">↺ ${resetLbl}</button>
+        <button class="btn danger" style="font-size:.75rem;padding:5px 12px" onclick="removeTeam('${x.id}')">${t.remove}</button>
+      </div>
+    </div>`).join('');
+  renderTeamLinks();
+}
+function renderTeamLinks(){
+  const el=document.getElementById('team-links-list');
+  if(!teams||teams.length===0){el.innerHTML=`<div style="font-size:.82rem;color:var(--muted);font-family:'Space Mono',monospace">${t.no_teams}</div>`;return;}
+  const base=window.location.href.split('?')[0];
+  el.innerHTML=teams.map(x=>{
+    const link=`${base}?team=${x.id}&lang=${lang}`;
+    return`<div class="team-item" style="flex-direction:column;align-items:flex-start;gap:5px">
+      <div class="team-name-text">${x.name}</div>
+      <div class="team-link-text">${link}</div>
+      <button class="btn" style="font-size:.72rem;padding:5px 12px;margin-top:2px" onclick="copyTxt('${link}')">📋 ${t.copied.replace('!','')}</button>
+    </div>`;
+  }).join('');
+}
+function copyTxt(txt){navigator.clipboard.writeText(txt).then(()=>alert(t.copied));}
+
+// ════ ADMIN TABS ════
+function adminTab(name,el){
+  ['setup','teams','dashboard'].forEach(x=>document.getElementById('atab-'+x).classList.add('hidden'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.getElementById('atab-'+name).classList.remove('hidden');el.classList.add('active');
+  if(name==='dashboard')loadDashboard();
+  if(name==='teams')renderTeamListAdmin();
+}
+
+// ════ DASHBOARD (live) ════
+async function loadDashboard(){
+  const grid=document.getElementById('dash-grid');
+  dashListeners.forEach(r=>dbOff(r));dashListeners=[];
+  const data=await dbGet('teams')||{};
+  teams=Object.values(data);
+  const ch=await dbGet('challenge');
+  if(!teams.length){grid.innerHTML=`<div style="font-size:.82rem;color:var(--muted);font-family:'Space Mono',monospace">${t.no_teams}</div>`;return;}
+  grid.innerHTML=teams.map(tm=>`<div id="dc-${tm.id}" class="dash-card"><div class="dash-name">${tm.name}</div><div class="dash-status">${t.dash_waiting}</div></div>`).join('');
+  teams.forEach(tm=>{
+    const ref=dbListen('gamestate/'+tm.id,(gs)=>{
+      const el=document.getElementById('dc-'+tm.id);
+      if(el)el.outerHTML=buildDashCard(tm,gs,ch);
+    });
+    dashListeners.push(ref);
+  });
+}
+function buildDashCard(team,gs,ch){
+  if(!gs)return`<div id="dc-${team.id}" class="dash-card"><div class="dash-name">${team.name}</div><div class="dash-status">${t.dash_waiting}</div><div style="font-size:.72rem;color:var(--muted);padding:10px 0;font-family:'Space Mono',monospace">${t.dash_no_tries}</div></div>`;
+  const guesses=gs.guesses||[];
+  const sc=gs.won?'won':gs.lost?'lost':'playing';
+  const st=gs.won?t.dash_solved(guesses.length):gs.lost?t.dash_lost:t.dash_attempt(guesses.length,ch?ch.maxGuesses:10);
+  const mini=guesses.slice(-3).map(g=>{
+    const dots=g.guess.map(c=>`<div class="mini-dot" style="background:${c}"></div>`).join('');
+    const hints=[...Array(g.black).fill('<div class="hint b"></div>'),...Array(g.white).fill('<div class="hint w"></div>'),...Array(4-g.black-g.white).fill('<div class="hint e"></div>')].join('');
+    return`<div class="mini-row">${dots}<div class="mini-hints">${hints}</div></div>`;
+  }).join('');
+  const max=ch?ch.maxGuesses:10;
+  const pct=Math.round((guesses.length/max)*100);
+  return`<div id="dc-${team.id}" class="dash-card ${sc}"><div class="dash-name">${team.name}</div><div class="dash-status ${sc}">${st}</div>${mini||`<div style="font-size:.72rem;color:var(--muted);font-family:'Space Mono',monospace">${t.dash_no_tries}</div>`}<div class="prog-row"><div class="prog-bg"><div class="prog-fill" style="width:${pct}%"></div></div><span class="prog-label">${guesses.length}/${max}</span></div></div>`;
+}
+
+// ════ TEAM GAME ════
+function pickTvColor(hex){tvCode[tvSlot]=hex;updateTSlots();if(tvSlot<3){tvSlot++;selectTSlot(tvSlot);}checkSubmitBtn();}
+function selectTSlot(i){
+  tvSlot=i;
+  for(let j=0;j<4;j++){
+    const el=document.getElementById('tvsl-'+j);
+    el.className='slot'+(j===i?' active-slot':'')+(tvCode[j]?' filled':'');
+    el.innerHTML=tvCode[j]?`<div class="clr" style="background:${tvCode[j]}" onclick="selectTSlot(${j})"></div>`:'<span>+</span>';
+  }
+}
+function updateTSlots(){selectTSlot(tvSlot);}
+function tvClearGuess(){tvCode=[null,null,null,null];tvSlot=0;for(let i=0;i<4;i++){const el=document.getElementById('tvsl-'+i);el.className='slot'+(i===0?' active-slot':'');el.innerHTML='<span>+</span>';}checkSubmitBtn();}
+function checkSubmitBtn(){document.getElementById('btn-submit').disabled=gameOver||tvCode.includes(null);}
+
+function evaluate(guess,code){
+  let black=0,white=0;const cc=[...code],gc=[...guess];
+  for(let i=0;i<4;i++){if(gc[i]===cc[i]){black++;cc[i]=null;gc[i]=null;}}
+  for(let i=0;i<4;i++){if(gc[i]===null)continue;const j=cc.indexOf(gc[i]);if(j!==-1){white++;cc[j]=null;}}
+  return{black,white};
+}
+
+async function submitGuess(){
+  if(gameOver||tvCode.includes(null))return;
+  const res=evaluate(tvCode,challenge.code);
+  gameState.guesses.push({guess:[...tvCode],black:res.black,white:res.white});
+  if(res.black===4)gameState.won=true;
+  else if(gameState.guesses.length>=challenge.maxGuesses)gameState.lost=true;
+  try{
+    await dbSet('gamestate/'+currentTeamId,{...gameState,teamName:currentTeamName,maxGuesses:challenge.maxGuesses});
+  }catch(e){showMsg('tv-msg','Save error!','err');gameState.guesses.pop();return;}
+  gameOver=gameState.won||gameState.lost;
+  renderHistory();updateTvProgress();tvClearGuess();
+  if(gameState.won)setTimeout(()=>showWin(),400);
+  else if(gameState.lost)setTimeout(()=>showLose(),400);
+  else if(gameOver)disableInput();
+}
+
+function renderHistory(){
+  const el=document.getElementById('tv-history');
+  if(!gameState.guesses.length){el.innerHTML='';return;}
+  el.innerHTML=[...gameState.guesses].reverse().map((g,ri)=>{
+    const num=gameState.guesses.length-ri;
+    const dots=g.guess.map(c=>`<div class="h-dot" style="background:${c}"></div>`).join('');
+    const hints=[...Array(g.black).fill('<div class="hint b"></div>'),...Array(g.white).fill('<div class="hint w"></div>'),...Array(4-g.black-g.white).fill('<div class="hint e"></div>')].join('');
+    return`<div class="hist-row" style="${g.black===4?'border-color:var(--green)':''}"><span class="hist-num">${num}</span><div class="h-dots">${dots}</div><div class="h-hints">${hints}</div></div>`;
+  }).join('');
+}
+function updateTvProgress(){
+  document.getElementById('tv-used').textContent=gameState.guesses.length;
+  document.getElementById('tv-max').textContent=challenge.maxGuesses;
+}
+function disableInput(){
+  document.getElementById('btn-submit').disabled=true;
+  document.querySelectorAll('#tv-palette .pchip').forEach(el=>el.style.opacity='.25');
+}
+function showWin(){
+  document.getElementById('ov-win-code').innerHTML=challenge.code.map(c=>`<div class="ov-dot" style="background:${c}"></div>`).join('');
+  document.getElementById('ov-win-txt').textContent=t.ov_win_txt(gameState.guesses.length,challenge.maxGuesses);
+  document.getElementById('ov-win').classList.add('show');disableInput();
+}
+function showLose(){
+  document.getElementById('ov-lose-code').innerHTML=challenge.code.map(c=>`<div class="ov-dot" style="background:${c}"></div>`).join('');
+  document.getElementById('ov-lose').classList.add('show');disableInput();
+}
+function showMsg(id,txt,type){
+  const el=document.getElementById(id);
+  el.className='msg '+type;el.textContent=txt;
+  setTimeout(()=>{el.className='';el.textContent='';},4000);
+}
+
+// ════ BACKGROUND IMAGE ════
+function initBg(){
+  const saved=localStorage.getItem('mm_bg');
+  if(saved){
+    document.body.style.backgroundImage=`url('${saved}')`;
+    const prev=document.getElementById('bg-preview');
+    if(prev){prev.style.backgroundImage=`url('${saved}')`;prev.innerHTML='';}
+    const removeBtn=document.getElementById('btn-bg-remove');
+    if(removeBtn)removeBtn.style.display='';
+  }
+}
+
+function handleBgUpload(input){
+  const file=input.files[0];
+  if(!file)return;
+  if(file.size>5*1024*1024){showMsg('bg-msg','Image too large (max 5 MB).','err');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const data=e.target.result;
+    try{
+      localStorage.setItem('mm_bg',data);
+      document.body.style.backgroundImage=`url('${data}')`;
+      const prev=document.getElementById('bg-preview');
+      prev.style.backgroundImage=`url('${data}')`;prev.innerHTML='';
+      document.getElementById('btn-bg-remove').style.display='';
+      showMsg('bg-msg',t.ch_saved.replace('Challenge','Image'),'ok');
+    }catch(e){showMsg('bg-msg','Storage full — try a smaller image.','err');}
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+function removeBg(){
+  localStorage.removeItem('mm_bg');
+  document.body.style.backgroundImage=`url('https://images.unsplash.com/photo-1534796636912-3b95919f04cb?w=1600&q=80')`;
+  const prev=document.getElementById('bg-preview');
+  prev.style.backgroundImage='';prev.innerHTML='<span style="font-size:1.6rem;opacity:.3">🖼</span>';
+  document.getElementById('btn-bg-remove').style.display='none';
+}
+
+function applyBgLang(){
+  const s=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  const bgLabels={
+    en:{title:'Background image',hint:'Upload an image file (JPG, PNG, WebP). Stored locally in this browser.',choose:'Choose image',remove:'Remove image'},
+    de:{title:'Hintergrundbild',hint:'Bilddatei hochladen (JPG, PNG, WebP). Wird lokal im Browser gespeichert.',choose:'Bild wählen',remove:'Bild entfernen'},
+    zh:{title:'背景图片',hint:'上传图片文件（JPG、PNG、WebP）。保存在本地浏览器中。',choose:'选择图片',remove:'删除图片'},
+    sk:{title:'Obrázok pozadia',hint:'Nahraj obrázok (JPG, PNG, WebP). Uloží sa lokálne v prehliadači.',choose:'Vybrať obrázok',remove:'Odstrániť obrázok'},
+    pl:{title:'Obraz tła',hint:'Prześlij plik obrazu (JPG, PNG, WebP). Zapisany lokalnie w przeglądarce.',choose:'Wybierz obraz',remove:'Usuń obraz'},
+  };
+  const lb=bgLabels[lang]||bgLabels.en;
+  s('lbl-bg-title',lb.title);s('lbl-bg-hint',lb.hint);s('lbl-bg-choose',lb.choose);
+  const rb=document.getElementById('btn-bg-remove');if(rb)rb.textContent=lb.remove;
+}
+
+// ════ TEAM LANGUAGE SWITCHER ════
+function toggleLangMenu(){
+  const menu=document.getElementById('lang-menu');
+  menu.style.display=menu.style.display==='none'?'block':'none';
+}
+// Close menu when clicking outside
+document.addEventListener('click',e=>{
+  const sw=document.getElementById('lang-switcher');
+  if(sw&&!sw.contains(e.target)){
+    const m=document.getElementById('lang-menu');
+    if(m)m.style.display='none';
+  }
+});
+function switchTeamLang(l,flag){
+  lang=l;t=T[l];
+  localStorage.setItem('mm_lang',l);
+  document.getElementById('tv-lang-flag').textContent=flag;
+  document.getElementById('lang-menu').style.display='none';
+  applyLang();
+  // re-apply palette labels
+  buildPalette('tv-palette','pickTvColor');
+  // update attempt counter label
+  if(challenge)document.getElementById('tv-max').textContent=challenge.maxGuesses;
+}
+// Set correct flag on load based on current lang
+function initLangFlag(){
+  const flags={en:'🇺🇸',de:'🇩🇪',zh:'🇨🇳',sk:'🇸🇰',pl:'🇵🇱'};
+  const el=document.getElementById('tv-lang-flag');
+  if(el)el.textContent=flags[lang]||'🇺🇸';
+}
+window.addEventListener('load',initBg);
+</script>
+</body>
+</html>
